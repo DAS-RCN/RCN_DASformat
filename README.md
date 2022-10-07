@@ -40,8 +40,29 @@ Files are stored in day-folders, each folder containing all files from this part
 where ***ProjName*** is a description of the project, or installation name
 Note that files have the extension ***.das***, even though technically they are ***.hdf5*** files.
 
-## Example File information
+## Example File Information
 
+```
+>>> fname = './Reference_2022-09-28_09.00.00.000.das'
+>>> infoDAS(fname, meta=True)
+
+./Reference_2022-09-28_09.00.00.000.das
+              traces == (10000, 300) numpy array
+      DASFileVersion == 1.03
+                  GL == 10.2
+              domain == strainrate
+                  dt == 0.001
+                elev == (300,) numpy array
+                lats == (300,) numpy array
+               longs == (300,) numpy array
+                  t0 == 2022-09-28 09:00:00
+     /meta/dict/val1 == 1.23
+     /meta/dict/val2 == dummy
+        /meta/scalar == 3.14159265358979
+        /meta/string == This is a test
+        /meta/vector == (10,) numpy array
+>>>
+```
 
 
 # Functions
