@@ -2,6 +2,14 @@
 
 The IRIS DAS data format is a minimalistic approach to store data from Distributed Acoustic Sensing (DAS) recordings in an HDF5 file.
 
+### Filename convention
+Files are stored in day-folders, each folder containing all files from this particular day. The file has the name syntax 
+```
+./2022-01-01/ProjName_YYYY-MM-DD_HH.MM.SS.FFF.das
+```
+where ***ProjName*** is a description of the project, or installation name
+Note that files have the extension ***.das***, even though technically they are ***.hdf5*** files.
+
 
 ### Trace-Data
 The signal is stored in as a **dataset** under root with the name ***traces***
@@ -32,14 +40,6 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 
 
 
-### Filename convention
-Files are stored in day-folders, each folder containing all files from this particular day. The file has the name syntax 
-```
-./2022-01-01/ProjName_YYYY-MM-DD_HH.MM.SS.FFF.das
-```
-where ***ProjName*** is a description of the project, or installation name
-Note that files have the extension ***.das***, even though technically they are ***.hdf5*** files.
-
 ## Example File Information
 
 ```
@@ -67,6 +67,7 @@ Note that files have the extension ***.das***, even though technically they are 
 
 # Functions
 
+### DAS_Format_reference.py
 ```
 def readDAS(fname):
 ```
@@ -86,6 +87,7 @@ def compareDASdicts(das1, das2):
 def make_dummy_data():
 ```
 
+### basicASNreader.py
 ```
 def basicASNreader(fname):
 ```
