@@ -7,8 +7,8 @@ Files are stored in day-folders, each folder containing all files from this part
 ```
 ./2022-01-01/ProjName_YYYY-MM-DD_HH.MM.SS.FFF.das
 ```
-where ==ProjName== is a description of the project, or installation name
-Note that files have the extension ***.das***, even though technically they are ==.hdf5== files.
+where ***ProjName*** is a description of the project, or installation name
+Note that files have the extension ***.das***, even though technically they are ***.hdf5*** files.
 
 
 ### Trace-Data
