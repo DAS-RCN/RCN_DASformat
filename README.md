@@ -31,6 +31,7 @@ GL              Gauge length [in meters] type=float32
 lats            numpy array of latitudes (or y-values), type=float32
 longs           numpy array of longitudes (or x-values), type=float32
 elev            numpy array of elevations above sea-level (in meters), type=float32
+meta            Dictionary of addtional user-defined meta-data
 ```
 
 ### Meta-Data
@@ -70,21 +71,87 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 ### DAS_Format_reference.py
 ```
 def readDAS(fname):
+    """
+    Read IRIS DAS data 
+    
+    Args:
+        fname:  Filename to be read 
+        
+    Returns:
+        das:    A dictionary of signal data and header information
+    """
 ```
 ```
 def checkDASFileFormat(das):
+    """
+    Check the validity of an IRIS DAS file. 
+    
+    Args:
+        das:    Dictionary of signal data and header information 
+                (see readDAS())
+    
+    Return: 
+        valid:  A boolean of True/False depending on outcome of check
+    """
 ```
 ```
 def infoDAS(fname, meta=True):
+    """
+    Print header information of an IRIS DAS file
+    """
 ```
 ```
 def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
+    """
+    Write data in IRIS RCN DAS format
+    Args:
+        fname:  Filename of the file to be written
+                Convention is "ProjectLabel_yyyy-mm-dd_HH.MM.SS.FFF.das"
+                Leave empty to create filename automatically for storing in current working directory
+        traces: DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
+        domain: A string describing data domain; currently accepted are {"strain", "strainrate"}
+        t0:     Unix time stamp of first sample
+        dt:     Sample spacing [in seconds]
+        GL:     Gauge length [in meters]
+        lats:   Vector of latitudes for each channel
+        longs:  Vector of longitudes for each channel
+        elev:   Vector of elevations for each channel [in meters]
+        meta:   A dictionary of user-defined header values. Then is free-form
+    
+    Returns:
+        Nothing
+    """
 ```
 ```
 def compareDASdicts(das1, das2):
+    """
+    Compare two das-data dictionaries. Mainly used to check if any 
+    errors were introduduced during format conversions
+    
+    Args:
+        das1:   Original DAS-data dictionary
+        das2:   DAS-data dictionary to compare after conversions
+
+    Return: 
+        valid:  A boolean of True/False depending on outcome of check
+    """
 ```
 ```
 def make_dummy_data():
+    """
+    Make some dummy data matrix and header value. This function can be used to genrate data 
+    which may then be stored in a vendor-native format
+    
+    Args:
+        No arguments for this function
+    
+    Retruns:
+        das:  A dictionary with: 
+                - Dummy data matrix
+                - Header information required by IRIS DAS
+                - Examples of free-from meta data
+        
+    """
 ```
 
 ### basicASNreader.py
