@@ -7,8 +7,8 @@ Files are stored in day-folders, each folder containing all files from this part
 ```
 ./2022-01-01/ProjName_YYYY-MM-DD_HH.MM.SS.FFF.das
 ```
-where ***ProjName*** is a description of the project, or installation name
-Note that files have the extension ***.das***, even though technically they are ***.hdf5*** files.
+where ==ProjName== is a description of the project, or installation name
+Note that files have the extension ***.das***, even though technically they are ==.hdf5== files.
 
 
 ### Trace-Data
@@ -43,7 +43,7 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 
 ## Example File Information
 
-```
+```python
 >>> fname = './Reference_2022-09-28_09.00.00.000.das'
 >>> infoDAS(fname, meta=True)
 
@@ -69,7 +69,7 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 # Functions
 
 ### DAS_Format_reference.py
-```
+```python
 def readDAS(fname):
     """
     Read IRIS DAS data 
@@ -81,7 +81,7 @@ def readDAS(fname):
         das:    A dictionary of signal data and header information
     """
 ```
-```
+```python
 def checkDASFileFormat(das):
     """
     Check the validity of an IRIS DAS file. 
@@ -94,13 +94,13 @@ def checkDASFileFormat(das):
         valid:  A boolean of True/False depending on outcome of check
     """
 ```
-```
+```python
 def infoDAS(fname, meta=True):
     """
     Print header information of an IRIS DAS file
     """
 ```
-```
+```python
 def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
     """
     Write data in IRIS RCN DAS format
@@ -122,7 +122,7 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
         Nothing
     """
 ```
-```
+```python
 def compareDASdicts(das1, das2):
     """
     Compare two das-data dictionaries. Mainly used to check if any 
@@ -136,7 +136,7 @@ def compareDASdicts(das1, das2):
         valid:  A boolean of True/False depending on outcome of check
     """
 ```
-```
+```python
 def make_dummy_data():
     """
     Make some dummy data matrix and header value. This function can be used to genrate data 
@@ -155,7 +155,7 @@ def make_dummy_data():
 ```
 
 ### basicASNreader.py
-```
+```python
 def basicASNreader(fname):
 ```
 
