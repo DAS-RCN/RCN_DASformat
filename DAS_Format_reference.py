@@ -64,7 +64,7 @@ def make_dummy_data():
 
 
     das = {}
-    das['DASFileVersion'] = 1.03
+    das['DASFileVersion'] = 0.90
     das['domain'] = 'strainrate'
     das['t0']     = t0
     das['dt']     = 1/1000.
@@ -220,7 +220,7 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
     with h5py.File(fname, 'w') as fid:
         fid['traces']         = traces  # traces of signal (nsmpl, nchnl), type=float32
 
-        fid.attrs['DASFileVersion'] = 1.03    # Version of DAS file format, type=float16
+        fid.attrs['DASFileVersion'] = 0.90    # Version of DAS file format, type=float16
         fid.attrs['domain']         = domain  # data domain of signal traces (Strain, Strainrate, given in units of strains [m/m]) type=string
         fid.attrs['t0']             = t0      # UNIX time stamp of first sample in file type=float64
         fid.attrs['dt']             = dt      # spacing between samples in seconds type=float32
@@ -290,7 +290,7 @@ def checkDASFileFormat(das):
 
     if das['DASFileVersion'] != 1.03:
        valid = False
-       msg.append('DAS File Version is not 1.03')
+       msg.append('DAS File Version is not 0.90')
 
 
     if das['lats'].shape[0] != das['longs'].shape[0]:
