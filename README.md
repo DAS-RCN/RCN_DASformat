@@ -27,7 +27,7 @@ Basic header information are stored as attributes under root. These are the very
 ```
 DASFileVersion  Version of DAS file format, type=float16
 domain          Data domain of signal traces (Strain, Strainrate, given in units of strains [m/m]) type=string
-t0              UNIX time stamp of first sample in file type=float64
+t0              UNIX time stamp of first sample in file (in nano-seconds !) type=uint64
 dt              Spacing between samples in seconds (i.e. inverse of the sampling rate) type=float32
 GL              Gauge length [in meters] type=float32
 lats            numpy array of latitudes (or y-values), type=float32
@@ -124,7 +124,7 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
                 Leave empty to create filename automatically for storing in current working directory
         traces: DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
         domain: A string describing data domain; currently accepted are {"strain", "strainrate"}
-        t0:     Unix time stamp of first sample
+        t0:     Unix time stamp of first sample in nano-seconds 
         dt:     Sample spacing [in seconds]
         GL:     Gauge length [in meters]
         lats:   Vector of latitudes for each channel

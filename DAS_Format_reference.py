@@ -26,7 +26,7 @@ Suggested steps are
     8) An automatic valitidy check can be perfomed (checkDASFileFormat()")
     9) You may also want to verify everything by comparing DAS data ("compareDASdicts(das1, das2)")
 
-See at the bottom of this file for example usage    
+See at the bottom of this file for example usage
 """
 
 
@@ -34,26 +34,26 @@ See at the bottom of this file for example usage
 ###############################################################
 def make_dummy_data():
     """
-    Make some dummy data matrix and header value. This function can be used to genrate data 
+    Make some dummy data matrix and header value. This function can be used to genrate data
     which may then be stored in a vendor-native format
-    
+
     Args:
         No arguments for this function
-    
+
     Retruns:
-        das:  A dictionary with: 
+        das:  A dictionary with:
                 - Dummy data matrix
                 - Header information required by IRIS DAS
                 - Examples of free-from meta data
-        
+
     """
     nchnl = 300
     nsmpl = 10000
-    start = datetime.strptime('28 Sep 2022 09:00:00', '%d %b %Y %H:%M:%S').replace(tzinfo=timezone.utc)
+    start = '2022-09-28T09:00:00'
 
-    t0    = start.timestamp()
+    t0    = np.datetime64(start, 'ns').astype('uint64')
 
-    np.random.seed(int(t0))
+    np.random.seed(int(t0/1e9))
     traces = np.random.rand(nsmpl, nchnl).astype('float32')
 
     Lat0  = 48.858222 #Eiffel Tower
@@ -87,15 +87,15 @@ def make_dummy_data():
 ###############################################################
 def _readDictInH5(trunk, group, dataset, show=False):
     """
-    Helper function to read meta dataset from dataset. It is used in recursevely 
+    Helper function to read meta dataset from dataset. It is used in recursevely
     accessing a group folder structure in HDF% files
-    
+
     Args:
-        trunk:   The full trunk (path) to the current group 
+        trunk:   The full trunk (path) to the current group
         group:   The name of the current group as part of the trunk
         dataset: The dataset to be recursively walked
         show:    Print out content (if True); mainly used in "infoDAS()" function
-        
+
     Returns:
         dset:    The values contained in the current group dataset
     """
@@ -150,13 +150,14 @@ def infoDAS(fname, meta=True):
         for k in fid.attrs.keys():
             val     = fid.attrs[k]
             if (k=='t0'):
-                val = datetime.utcfromtimestamp(val).isoformat(sep = ' ')
+                val = (val/1e3).astype('datetime64[us]')
+                val = val.item().strftime('%d %b %Y %H:%M:%S.%f')
+
 
             if isinstance(val, str):
                 print("{:>20} == {}".format(k,val))
             elif isinstance(val, np.ndarray):
                 print("{:>20} == {} numpy array, ({:6.5g} <= {} <={:6.5g})".format(k,val.shape, val.min(), k, val.max() ))
-
             elif isinstance(val, list):
                 print("{:>20} == {} list".format(k,len(val)))
             else:
@@ -173,7 +174,7 @@ def infoDAS(fname, meta=True):
 
 
 ###############################################################
-def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):             
+def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
     """
     Write data in IRIS RCN DAS format
     Args:
@@ -182,14 +183,14 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
                 Leave empty to create filename automatically for storing in current working directory
         traces: DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
         domain: A string describing data domain; currently accepted are {"strain", "strainrate"}
-        t0:     Unix time stamp of first sample
+        t0:     Unix time stamp of first sample (in nano-seconds)
         dt:     Sample spacing [in seconds]
         GL:     Gauge length [in meters]
         lats:   Vector of latitudes for each channel
         longs:  Vector of longitudes for each channel
         elev:   Vector of elevations for each channel [in meters]
         meta:   A dictionary of user-defined header values. Then is free-form
-    
+
     Returns:
         Nothing
     """
@@ -213,8 +214,8 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
     ##-----------------------------------
     if len(fname) == 0:
         #create filename from start time
-        start     = datetime.utcfromtimestamp(t0)
-        start_str = start.strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
+        start     = (t0/1e6).astype('datetime64[ms]')
+        start_str = start.item().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
         fname     = './Automatic_' + start_str + '.das'
 
     with h5py.File(fname, 'w') as fid:
@@ -222,13 +223,13 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
 
         fid.attrs['DASFileVersion'] = 0.90    # Version of DAS file format, type=float16
         fid.attrs['domain']         = domain  # data domain of signal traces (Strain, Strainrate, given in units of strains [m/m]) type=string
-        fid.attrs['t0']             = t0      # UNIX time stamp of first sample in file type=float64
+        fid.attrs['t0']             = t0      # UNIX time stamp of first sample in file (in nano-seconds) type=uint64
         fid.attrs['dt']             = dt      # spacing between samples in seconds type=float32
         fid.attrs['GL']             = GL      # gauge length [in meters] type=float32
         fid.attrs['lats']           = lats    # numpy array of latitudes (or y-values), type=float32
         fid.attrs['longs']          = longs   # numpy array of longitudes (or x-values), type=float32
         fid.attrs['elev']           = elev    # numpy array of elevations above sea-level (in meters), type=float32
-        
+
         #now walk the "meta" dictionary and store its values recursively
         _walkingDictStoring('meta', '', meta)
     return
@@ -239,18 +240,18 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
 ###############################################################
 def readDAS(fname):
     """
-    Read IRIS DAS data 
-    
+    Read IRIS DAS data
+
     Args:
-        fname:  Filename to be read 
-        
+        fname:  Filename to be read
+
     Returns:
         das:    A dictionary of signal data and header information
     """
     with h5py.File(fname, 'r') as fid:
         das = {}
         das['DASFileVersion']   = fid.attrs['DASFileVersion'][()]
-        if das['DASFileVersion'] != 1.03:
+        if das['DASFileVersion'] != 0.90:
             print('Unknown DAS file version number!')
             exit()
         else:
@@ -264,7 +265,7 @@ def readDAS(fname):
             das['longs']  = fid.attrs['longs']
             das['elev']   = fid.attrs['elev']
             das['meta']   = {}
-            
+
         #now walk the "meta" dictionary and read its values recursively
         das['meta'] = _readDictInH5('', 'meta', fid['meta'])
     return das
@@ -275,16 +276,16 @@ def readDAS(fname):
 ###############################################################
 def checkDASFileFormat(das):
     """
-    Check the validity of an IRIS DAS file. 
-    
+    Check the validity of an IRIS DAS file.
+
     Args:
-        das:    Dictionary of signal data and header information 
+        das:    Dictionary of signal data and header information
                 (see readDAS())
-    
-    Return: 
+
+    Return:
         valid:  A boolean of True/False depending on outcome of check
     """
-    
+
     msg = ['ERROR:']
     valid = True
 
@@ -325,14 +326,14 @@ def checkDASFileFormat(das):
 ###############################################################
 def compareDASdicts(das1, das2):
     """
-    Compare two das-data dictionaries. Mainly used to check if any 
+    Compare two das-data dictionaries. Mainly used to check if any
     errors were introduduced during format conversions
-    
+
     Args:
         das1:   Original DAS-data dictionary
         das2:   DAS-data dictionary to compare after conversions
 
-    Return: 
+    Return:
         valid:  A boolean of True/False depending on outcome of check
     """
     msg = ['ERROR:']
@@ -390,9 +391,9 @@ if __name__ == '__main__':
     #create dummy data
     das_dummy =  make_dummy_data()
 
-    start     = datetime.utcfromtimestamp(das_dummy['t0'])
-    start_str = start.strftime('%Y-%m-%d_%H.%M.%S.%f')
-    fname     = './Reference_' + start_str[:-3] + '.das'
+    start     = (das_dummy['t0']/1e6).astype('datetime64[ms]')
+    start_str = start.item().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
+    fname     = './Reference_' + start_str + '.das'
 
     #write reference data file
     writeDAS(fname,  \
