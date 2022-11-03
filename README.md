@@ -2,6 +2,8 @@
 
 The IRIS DAS data format is a minimalistic approach to store data from Distributed Acoustic Sensing (DAS) recordings in an HDF5 file.
 
+If you have any comments, please open an [issue on github](https://github.com/DAS-RCN/IRIS_DASformat/issues), or comment on existing ones.
+
 ### Filename convention
 Files are stored in day-folders, each folder containing all files from this particular day. The file has the name syntax 
 ```
