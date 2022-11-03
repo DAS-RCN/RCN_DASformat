@@ -2,8 +2,7 @@
 """
 Reference reader and writer for Basic DAS file exchange format
 
-Version 1.03
-28.09.2022
+03.11.2022
 """
 
 import numpy as np
@@ -28,6 +27,10 @@ Suggested steps are
 
 See at the bottom of this file for example usage
 """
+
+
+version = 0.91
+
 
 
 
@@ -64,7 +67,7 @@ def make_dummy_data():
 
 
     das = {}
-    das['DASFileVersion'] = 0.90
+    das['DASFileVersion'] = version
     das['domain'] = 'strainrate'
     das['t0']     = t0
     das['dt']     = 1/1000.
@@ -221,7 +224,7 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
     with h5py.File(fname, 'w') as fid:
         fid['traces']         = traces  # traces of signal (nsmpl, nchnl), type=float32
 
-        fid.attrs['DASFileVersion'] = 0.90    # Version of DAS file format, type=float16
+        fid.attrs['DASFileVersion'] = version    # Version of DAS file format, type=float16
         fid.attrs['domain']         = domain  # data domain of signal traces (Strain, Strainrate, given in units of strains [m/m]) type=string
         fid.attrs['t0']             = t0      # UNIX time stamp of first sample in file (in nano-seconds) type=uint64
         fid.attrs['dt']             = dt      # spacing between samples in seconds type=float32
@@ -251,7 +254,7 @@ def readDAS(fname):
     with h5py.File(fname, 'r') as fid:
         das = {}
         das['DASFileVersion']   = fid.attrs['DASFileVersion'][()]
-        if das['DASFileVersion'] != 0.90:
+        if das['DASFileVersion'] != version:
             print('Unknown DAS file version number!')
             exit()
         else:
@@ -289,9 +292,9 @@ def checkDASFileFormat(das):
     msg = ['ERROR:']
     valid = True
 
-    if das['DASFileVersion'] != 1.03:
+    if das['DASFileVersion'] != version:
        valid = False
-       msg.append('DAS File Version is not 0.90')
+       msg.append(f'DAS File Version is not {version}')
 
 
     if das['lats'].shape[0] != das['longs'].shape[0]:
