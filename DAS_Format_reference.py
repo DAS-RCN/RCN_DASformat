@@ -29,7 +29,7 @@ See at the bottom of this file for example usage
 """
 
 
-version = 0.91
+version = 0.92
 
 
 
@@ -70,7 +70,7 @@ def make_dummy_data():
     das['DASFileVersion'] = version
     das['domain'] = 'strainrate'
     das['t0']     = t0
-    das['dt']     = 1/1000.
+    das['fsamp']  = 1000.
     das['GL']     = 10.2
     das['lats']   = lats
     das['longs']  = lats * 0 + Long0
@@ -177,7 +177,7 @@ def infoDAS(fname, meta=True):
 
 
 ###############################################################
-def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
+def writeDAS(fname,  traces, domain, t0, fsamp, GL, lats, longs, elev, meta={}):
     """
     Write data in IRIS RCN DAS format
     Args:
@@ -187,7 +187,7 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
         traces: DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
         domain: A string describing data domain; currently accepted are {"strain", "strainrate"}
         t0:     Unix time stamp of first sample (in nano-seconds)
-        dt:     Sample spacing [in seconds]
+        fsamp:  Samplin rate [in Hz]
         GL:     Gauge length [in meters]
         lats:   Vector of latitudes for each channel
         longs:  Vector of longitudes for each channel
@@ -227,7 +227,7 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
         fid.attrs['DASFileVersion'] = version    # Version of DAS file format, type=float16
         fid.attrs['domain']         = domain  # data domain of signal traces (Strain, Strainrate, given in units of strains [m/m]) type=string
         fid.attrs['t0']             = t0      # UNIX time stamp of first sample in file (in nano-seconds) type=uint64
-        fid.attrs['dt']             = dt      # spacing between samples in seconds type=float32
+        fid.attrs['fsamp']          = fsamp   # temporal sampling rate in Hz type=float32
         fid.attrs['GL']             = GL      # gauge length [in meters] type=float32
         fid.attrs['lats']           = lats    # numpy array of latitudes (or y-values), type=float32
         fid.attrs['longs']          = longs   # numpy array of longitudes (or x-values), type=float32
@@ -262,7 +262,7 @@ def readDAS(fname):
 
             das['domain'] = fid.attrs['domain']
             das['t0']     = fid.attrs['t0']
-            das['dt']     = fid.attrs['dt']
+            das['fsamp']  = fid.attrs['fsamp']
             das['GL']     = fid.attrs['GL']
             das['lats']   = fid.attrs['lats']
             das['longs']  = fid.attrs['longs']
@@ -362,9 +362,9 @@ def compareDASdicts(das1, das2):
         msg.append('T0 value doesn\'t match')
 
 
-    if das1['dt'] != das2['dt']:
+    if das1['fsamp'] != das2['fsamp']:
         valid = False
-        msg.append('dt value doesn\'t match')
+        msg.append('fsamp value doesn\'t match')
 
     if not np.array_equal(das1['longs'], das2['longs']):
         valid = False
@@ -403,7 +403,7 @@ if __name__ == '__main__':
              das_dummy['traces'],\
              das_dummy['domain'],\
              das_dummy['t0'], \
-             das_dummy['dt'], \
+             das_dummy['fsamp'], \
              das_dummy['GL'], \
              das_dummy['lats'], \
              das_dummy['longs'], \

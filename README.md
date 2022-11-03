@@ -5,7 +5,7 @@ The IRIS DAS data format is a minimalistic approach to store data from Distribut
 If you have any comments, please open an [issue on github](https://github.com/DAS-RCN/IRIS_DASformat/issues), or comment on existing ones.
 
 ### Filename convention
-Files are stored in day-folders, each folder containing all files from this particular day. The file has the name syntax 
+Files are stored in day-folders, each folder containing all files from this particular day. The file has the name syntax
 ```
 ./2022-01-01/ProjName_YYYY-MM-DD_HH.MM.SS.FFF.das
 ```
@@ -16,7 +16,7 @@ Note that files have the extension ***.das***, even though technically they are 
 ### Trace-Data
 The signal is stored in as a **dataset** under root with the name ***traces***
 Note that only strain or strainrate data are acceptable. Units are in strains or strains/sec, respectively.
-Also note that data need to be geo-calibrated, such that excess fibre lengths (such as loops) are corrected for. 
+Also note that data need to be geo-calibrated, such that excess fibre lengths (such as loops) are corrected for.
 
 ```
 traces          Traces of signal (nsmpl, nchnl), type=float32
@@ -28,7 +28,7 @@ Basic header information are stored as attributes under root. These are the very
 DASFileVersion  Version of DAS file format, type=float16
 domain          Data domain of signal traces (Strain, Strainrate, given in units of strains [m/m]) type=string
 t0              UNIX time stamp of first sample in file (in nano-seconds !) type=uint64
-dt              Spacing between samples in seconds (i.e. inverse of the sampling rate) type=float32
+fsamp           temporal sampling rate in Hz type=float32
 GL              Gauge length [in meters] type=float32
 lats            numpy array of latitudes (or y-values), type=float32
 longs           numpy array of longitudes (or x-values), type=float32
@@ -39,7 +39,7 @@ A few comments on the reasoning for the choices made here:
 Generally, the idea is to make live easy for the analyst. Conversions are prone to error, and only the original data provider knows the correct way to do this
 * data matrix (nsmpl/nchn) vs (nchn/nsmpl): depending on your programming language, either on is closer to the native matrix storage format for fastest way of processing (please open an "issue" if wrong)
 * Strain/strain-rate is prefered to radians, as the former are units geophysists are used to. Please comment in the "Issues" section here about your thoughts on units. maybe nano-strain(rate) would be a more natural unit to use? Can we get away with float16?
-* dt vs fsamp is a choice of taste and here dt was selected for no particular reason
+* dt vs fsamp is a choice of taste and here "fsamp" was selected as high sampling rates can shown as non-fractional value
 * lat/long vs distance & dx: dx is the optical sensor spacing. This is actually of little use to a geophysicist. We are interested in actual sensor location. Imagine the case where you have a fibre loop of 50m in a cabinet somewhere (typical road monitoring example). Shared public data must(!!) be geo-calibrated. Users have no way to do tap tests. It is the data-providers responsibility to do that for the end-user. (At least for the global month, then the community can decide that this approach had it’s flaws…)
 * elevation vs depth: This is also question of taste, and was decided on the IRIS seimometer convention of positive values are up.
 * metric vs imperial units: Let's stick to the science convention most of the world is using
@@ -66,7 +66,7 @@ Additional information can be stored under the name ***meta*** as dataset. This 
       DASFileVersion == 1.03
                   GL == 10.2
               domain == strainrate
-                  dt == 0.001
+               fsamp == 1000
                 elev == (300,) numpy array
                 lats == (300,) numpy array
                longs == (300,) numpy array
@@ -86,11 +86,11 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 ```python
 def readDAS(fname):
     """
-    Read IRIS DAS data 
-    
+    Read IRIS DAS data
+
     Args:
-        fname:  Filename to be read 
-        
+        fname:  Filename to be read
+
     Returns:
         das:    A dictionary of signal data and header information
     """
@@ -98,13 +98,13 @@ def readDAS(fname):
 ```python
 def checkDASFileFormat(das):
     """
-    Check the validity of an IRIS DAS file. 
-    
+    Check the validity of an IRIS DAS file.
+
     Args:
-        das:    Dictionary of signal data and header information 
+        das:    Dictionary of signal data and header information
                 (see readDAS())
-    
-    Return: 
+
+    Return:
         valid:  A boolean of True/False depending on outcome of check
     """
 ```
@@ -115,7 +115,7 @@ def infoDAS(fname, meta=True):
     """
 ```
 ```python
-def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
+def writeDAS(fname,  traces, domain, t0, fsamp, GL, lats, longs, elev, meta={}):
     """
     Write data in IRIS RCN DAS format
     Args:
@@ -124,14 +124,14 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
                 Leave empty to create filename automatically for storing in current working directory
         traces: DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
         domain: A string describing data domain; currently accepted are {"strain", "strainrate"}
-        t0:     Unix time stamp of first sample in nano-seconds 
-        dt:     Sample spacing [in seconds]
+        t0:     Unix time stamp of first sample in nano-seconds
+        fsamp:  Temporal sampling rate [in Hz]
         GL:     Gauge length [in meters]
         lats:   Vector of latitudes for each channel
         longs:  Vector of longitudes for each channel
         elev:   Vector of elevations for each channel [in meters]
         meta:   A dictionary of user-defined header values. Then is free-form
-    
+
     Returns:
         Nothing
     """
@@ -139,32 +139,32 @@ def writeDAS(fname,  traces, domain, t0, dt, GL, lats, longs, elev, meta={}):
 ```python
 def compareDASdicts(das1, das2):
     """
-    Compare two das-data dictionaries. Mainly used to check if any 
+    Compare two das-data dictionaries. Mainly used to check if any
     errors were introduduced during format conversions
-    
+
     Args:
         das1:   Original DAS-data dictionary
         das2:   DAS-data dictionary to compare after conversions
 
-    Return: 
+    Return:
         valid:  A boolean of True/False depending on outcome of check
     """
 ```
 ```python
 def make_dummy_data():
     """
-    Make some dummy data matrix and header value. This function can be used to genrate data 
+    Make some dummy data matrix and header value. This function can be used to genrate data
     which may then be stored in a vendor-native format
-    
+
     Args:
         No arguments for this function
-    
+
     Retruns:
-        das:  A dictionary with: 
+        das:  A dictionary with:
                 - Dummy data matrix
                 - Header information required by IRIS DAS
                 - Examples of free-from meta data
-        
+
     """
 ```
 
@@ -178,7 +178,7 @@ def basicASNreader(fname):
 
 
 
- 
+
 
 
 
