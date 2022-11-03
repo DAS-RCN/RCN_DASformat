@@ -35,6 +35,18 @@ longs           numpy array of longitudes (or x-values), type=float32
 elev            numpy array of elevations above sea-level (in meters), type=float32
 meta            Dictionary of addtional user-defined meta-data
 ```
+A few comments on the reasoning for the choices made here:
+Generally, the idea is to make live easy for the analyst. Conversions are prone to error, and only the original data provider knows the correct way to do this
+* data matrix (nsmpl/nchn) vs (nchn/nsmpl): depending on your programming language, either on is closer to the native matrix storage format for fastest way of processing (please open an "issue" if wrong)
+* Strain/strain-rate is prefered to radians, as the former are units geophysists are used to. Please comment in the "Issues" section here about your thoughts on units. maybe nano-strain(rate) would be a more natural unit to use? Can we get away with float16?
+* dt vs fsamp is a choice of taste and here dt was selected for no particular reason
+* lat/long vs distance & dx: dx is the optical sensor spacing. This is actually of little use to a geophysicist. We are interested in actual sensor location. Imagine the case where you have a fibre loop of 50m in a cabinet somewhere (typical road monitoring example). Shared public data must(!!) be geo-calibrated. Users have no way to do tap tests. It is the data-providers responsibility to do that for the end-user. (At least for the global month, then the community can decide that this approach had it’s flaws…)
+* elevation vs depth: This is also question of taste, and was decided on the IRIS seimometer convention of positive values are up.
+* metric vs imperial units: Let's stick to the science convention most of the world is using
+
+
+
+
 
 ### Meta-Data
 Additional information can be stored under the name ***meta*** as dataset. This is free-format, but should be kept to a minimum.
