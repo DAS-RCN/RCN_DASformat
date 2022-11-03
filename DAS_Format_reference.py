@@ -386,13 +386,18 @@ def compareDASdicts(das1, das2):
     return valid
 
 
-
+from plotting import ez_waterfall
 
 
 ###############################################################
 if __name__ == '__main__':
     #create dummy data
     das_dummy =  make_dummy_data()
+
+    ez_waterfall(das_dummy['traces'], fsamp=das_dummy['fsamp'], t0=das_dummy['t0'], \
+                 time_format='%H:%M:%S',time_ticks=range(0,60,2),title='Dummy data')
+
+
 
     start     = (das_dummy['t0']/1e6).astype('datetime64[ms]')
     start_str = start.item().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
@@ -418,7 +423,6 @@ if __name__ == '__main__':
     #check = checkDASFileFormat(das_dummy)
     #check = checkDASFileFormat(das_out)
     #check = compareDASdicts(das_dummy, das_out)
-
 
 
 
