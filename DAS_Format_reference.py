@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Reference reader and writer for Basic DAS file exchange format
+Reference reader and writer for a minimalistic DAS file exchange format
 
 03.11.2022
 """
@@ -11,19 +11,19 @@ from datetime import datetime, timezone
 from sys import exit
 
 """
-This file contains a set of functions to test data conversion to the IRIS RCN DAS format.
-Consider this as a "reference-reader" to confirm your IRIS RCN DAS writer implementation
+This file contains a set of functions to test data conversion to the miniDAS format.
+Consider this as a "reference-reader" to confirm your miniDAS writer implementation
 
 Suggested steps are
     1) Create some dummy data ("make_dummy_data()")
     2) Convert into a vendor native format (using some external code)
     3) Save as vendor native file
     4) Read vendor-file with the vendor-provided routines
-    5) Export to IRIS DAS format with your implentation
-    6) Read IRIS DAS format ("readDAS()")
+    5) Export to miniDAS format with your implentation
+    6) Read miniDAS format ("readDAS()")
     7) Print out file headers  ("infoDAS()")
     8) An automatic valitidy check can be perfomed (checkDASFileFormat()")
-    9) You may also want to verify everything by comparing DAS data ("compareDASdicts(das1, das2)")
+    9) You may also want to verify everything by comparing miniDAS data ("compareDASdicts(das1, das2)")
 
 See at the bottom of this file for example usage
 """
@@ -46,7 +46,7 @@ def make_dummy_data():
     Retruns:
         das:  A dictionary with:
                 - Dummy data matrix
-                - Header information required by IRIS DAS
+                - Header information required by miniDAS
                 - Examples of free-from meta data
 
     """
@@ -143,7 +143,7 @@ def _readDictInH5(trunk, group, dataset, show=False):
 ###############################################################
 def infoDAS(fname, meta=True):
     """
-    Print header information of an IRIS DAS file
+    Print header information of an miniDAS file
     """
 
     with h5py.File(fname, 'r') as fid:
@@ -179,10 +179,10 @@ def infoDAS(fname, meta=True):
 ###############################################################
 def writeDAS(fname,  traces, domain, t0, fsamp, GL, lats, longs, elev, meta={}):
     """
-    Write data in IRIS RCN DAS format
+    Write data in miniDAS format
     Args:
         fname:  Filename of the file to be written
-                Convention is "ProjectLabel_yyyy-mm-dd_HH.MM.SS.FFF.das"
+                Convention is "ProjectLabel_yyyy-mm-dd_HH.MM.SS.FFF.miniDAS"
                 Leave empty to create filename automatically for storing in current working directory
         traces: DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
         domain: A string describing data domain; currently accepted are {"strain", "strainrate"}
@@ -243,7 +243,7 @@ def writeDAS(fname,  traces, domain, t0, fsamp, GL, lats, longs, elev, meta={}):
 ###############################################################
 def readDAS(fname):
     """
-    Read IRIS DAS data
+    Read miniDAS data
 
     Args:
         fname:  Filename to be read
@@ -279,7 +279,7 @@ def readDAS(fname):
 ###############################################################
 def checkDASFileFormat(das):
     """
-    Check the validity of an IRIS DAS file.
+    Check the validity of an miniDAS file.
 
     Args:
         das:    Dictionary of signal data and header information
@@ -333,8 +333,8 @@ def compareDASdicts(das1, das2):
     errors were introduduced during format conversions
 
     Args:
-        das1:   Original DAS-data dictionary
-        das2:   DAS-data dictionary to compare after conversions
+        das1:   Original miniDAS-data dictionary
+        das2:   miniDAS-data dictionary to compare after conversions
 
     Return:
         valid:  A boolean of True/False depending on outcome of check
@@ -401,7 +401,7 @@ if __name__ == '__main__':
 
     start     = (das_dummy['t0']/1e6).astype('datetime64[ms]')
     start_str = start.item().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
-    fname     = './Reference_' + start_str + '.das'
+    fname     = './Reference_' + start_str + '.miniDAS'
 
     #write reference data file
     writeDAS(fname,  \

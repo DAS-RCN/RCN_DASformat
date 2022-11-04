@@ -1,16 +1,16 @@
-# IRIS DAS data format
+# mini DAS data format
 
-The IRIS DAS data format is a minimalistic approach to store data from Distributed Acoustic Sensing (DAS) recordings in an HDF5 file.
+The miniDAS data format is a minimalistic approach to store data from Distributed Acoustic Sensing (DAS) recordings in an HDF5 file.
 
 If you have any comments, please open an [issue on github](https://github.com/DAS-RCN/IRIS_DASformat/issues), or comment on existing ones.
 
 ### Filename convention
 Files are stored in day-folders, each folder containing all files from this particular day. The file has the name syntax
 ```
-./2022-01-01/ProjName_YYYY-MM-DD_HH.MM.SS.FFF.das
+./2022-01-01/ProjName_YYYY-MM-DD_HH.MM.SS.FFF.miniDAS
 ```
 where ***ProjName*** is a description of the project, or installation name
-Note that files have the extension ***.das***, even though technically they are ***.hdf5*** files.
+Note that files have the extension ***.miniDAS***, even though technically they are ***.hdf5*** files.
 
 
 ### Trace-Data
@@ -58,10 +58,10 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 ## Example File Information
 
 ```python
->>> fname = './Reference_2022-09-28_09.00.00.000.das'
+>>> fname = './Reference_2022-09-28_09.00.00.000.miniDAS'
 >>> infoDAS(fname, meta=True)
 
-./Reference_2022-09-28_09.00.00.000.das
+./Reference_2022-09-28_09.00.00.000.miniDAS
               traces == (10000, 300) numpy array
       DASFileVersion == 1.03
                   GL == 10.2
@@ -86,7 +86,7 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 ```python
 def readDAS(fname):
     """
-    Read IRIS DAS data
+    Read minidata
 
     Args:
         fname:  Filename to be read
@@ -98,7 +98,7 @@ def readDAS(fname):
 ```python
 def checkDASFileFormat(das):
     """
-    Check the validity of an IRIS DAS file.
+    Check the validity of an miniDAS file.
 
     Args:
         das:    Dictionary of signal data and header information
@@ -111,16 +111,16 @@ def checkDASFileFormat(das):
 ```python
 def infoDAS(fname, meta=True):
     """
-    Print header information of an IRIS DAS file
+    Print header information of an miniDAS file
     """
 ```
 ```python
 def writeDAS(fname,  traces, domain, t0, fsamp, GL, lats, longs, elev, meta={}):
     """
-    Write data in IRIS RCN DAS format
+    Write data in miniDAS format
     Args:
         fname:  Filename of the file to be written
-                Convention is "ProjectLabel_yyyy-mm-dd_HH.MM.SS.FFF.das"
+                Convention is "ProjectLabel_yyyy-mm-dd_HH.MM.SS.FFF.miniDAS"
                 Leave empty to create filename automatically for storing in current working directory
         traces: DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
         domain: A string describing data domain; currently accepted are {"strain", "strainrate"}
@@ -143,8 +143,8 @@ def compareDASdicts(das1, das2):
     errors were introduduced during format conversions
 
     Args:
-        das1:   Original DAS-data dictionary
-        das2:   DAS-data dictionary to compare after conversions
+        das1:   Original miniDAS-data dictionary
+        das2:   miniDAS-data dictionary to compare after conversions
 
     Return:
         valid:  A boolean of True/False depending on outcome of check
@@ -162,7 +162,7 @@ def make_dummy_data():
     Retruns:
         das:  A dictionary with:
                 - Dummy data matrix
-                - Header information required by IRIS DAS
+                - Header information required by miniDAS
                 - Examples of free-from meta data
 
     """
