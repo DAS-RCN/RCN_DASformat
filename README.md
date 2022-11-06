@@ -15,11 +15,11 @@ Note that files have the extension ***.miniDAS***, even though technically they 
 
 ### Trace-Data
 The signal is stored in as a **dataset** under root with the name ***traces***
-Note that only strain or strainrate data are acceptable. Units are in strains or strains/sec, respectively.
-Also note that data need to be geo-calibrated, such that excess fibre lengths (such as loops) are corrected for.
+Units of the traces mus be given as a string in **data_unit** field. And additional **scale_factor** may be given that is to be multiplied with the trace data. This is accompanied by a string **units_after_scaling**
+Note that data need to be geo-calibrated, such that excess fibre lengths (such as loops) are corrected for.
 
 ```
-traces          Traces of signal (nsmpl, nchnl), type=float32
+traces          Traces of signal (nsmpl, nchnl)
 ```
 
 ### Header
@@ -60,17 +60,18 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 
 ./Reference_2022-09-28_09.00.00.000.miniDAS
               traces == (10000, 300) numpy array
-          data_units == rad
+          data_units == 'rad'
           elevations == (300,) numpy array, (     0 <= elevations <=     0)
-              format == miniDAS
+              format == 'miniDAS'
         gauge_length == 10.2
            latitudes == (300,) numpy array, (48.858 <= latitudes <=48.868)
           longitudes == (300,) numpy array, (2.2945 <= longitudes <=2.2945)
        sampling_rate == 1000.0
         scale_factor == 567890.1234
           start_time == 28 Sep 2022 09:00:00.000000
- units_after_scaling == µε/s
-             version == 0.1.0
+ units_after_scaling == 'µε/s'
+             version == '0.1.0'
+
      /meta/dict/val1 == 1.23
      /meta/dict/val2 == dummy
         /meta/scalar == 3.14159265358979
