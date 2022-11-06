@@ -161,10 +161,9 @@ def infoDAS(fname, meta=True):
             if (k=='start_time'):
                 val = (val/1e3).astype('datetime64[us]')
                 val = val.item().strftime('%d %b %Y %H:%M:%S.%f')
-
-
-            if isinstance(val, str):
                 print("{:>20} == {}".format(k,val))
+            elif isinstance(val, str):
+                print("{:>20} == '{}'".format(k,val))
             elif isinstance(val, np.ndarray):
                 print("{:>20} == {} numpy array, ({:6.5g} <= {} <={:6.5g})".format(k,val.shape, val.min(), k, val.max() ))
             elif isinstance(val, list):
@@ -319,6 +318,7 @@ if __name__ == '__main__':
     start     = (das_dummy['start_time']/1e6).astype('datetime64[ms]')
     start_str = start.item().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
     fname     = './Reference_' + start_str + '.miniDAS'
+
 
     #write reference data file
     writeDAS(fname,  \
