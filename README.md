@@ -25,25 +25,22 @@ traces          Traces of signal (nsmpl, nchnl), type=float32
 ### Header
 Basic header information are stored as attributes under root. These are the very minimal data necessary to process the data.
 ```
-DASFileVersion  Version of DAS file format, type=float16
-domain          Data domain of signal traces (Strain, Strainrate, given in units of strains [m/m]) type=string
-t0              UNIX time stamp of first sample in file (in nano-seconds !) type=uint64
-fsamp           temporal sampling rate in Hz type=float32
-GL              Gauge length [in meters] type=float32
-lats            numpy array of latitudes (or y-values), type=float32
-longs           numpy array of longitudes (or x-values), type=float32
-elev            numpy array of elevations above sea-level (in meters), type=float32
-meta            Dictionary of addtional user-defined meta-data
-```
-A few comments on the reasoning for the choices made here:
-Generally, the idea is to make live easy for the analyst. Conversions are prone to error, and only the original data provider knows the correct way to do this
-* data matrix (nsmpl/nchn) vs (nchn/nsmpl): depending on your programming language, either on is closer to the native matrix storage format for fastest way of processing (please open an "issue" if wrong)
-* Strain/strain-rate is prefered to radians, as the former are units geophysists are used to. Please comment in the "Issues" section here about your thoughts on units. maybe nano-strain(rate) would be a more natural unit to use? Can we get away with float16?
-* dt vs fsamp is a choice of taste and here "fsamp" was selected as high sampling rates can shown as non-fractional value
-* lat/long vs distance & dx: dx is the optical sensor spacing. This is actually of little use to a geophysicist. We are interested in actual sensor location. Imagine the case where you have a fibre loop of 50m in a cabinet somewhere (typical road monitoring example). Shared public data must(!!) be geo-calibrated. Users have no way to do tap tests. It is the data-providers responsibility to do that for the end-user. (At least for the global month, then the community can decide that this approach had it’s flaws…)
-* elevation vs depth: This is also question of taste, and was decided on the IRIS seimometer convention of positive values are up.
-* metric vs imperial units: Let's stick to the science convention most of the world is using
+format                 Format name (must be 'miniDAS'), type=string
+version                Version of DAS file format, type=string
+data_units             Units of the data-traces (e.g. radians, m/(m*s), m/m) type=string
+scale_factor           A scaling factor to be multiplied with the data; type=float32
+units_after_scaling    Units of traces *after* scaling is multiplied with traces; type=string
+start_time             UNIX time stamp of first sample in file (in nano-seconds) type=uint64
+sampling_rate          Temporal sampling rate in Hz type=float32
+gauge_length           Gauge length [in meters] type=float32
+latitudes              numpy array of latitudes (or y-values), type=float32
+longitudes             numpy array of longitudes (or x-values), type=float32
+elevations             numpy array of elevations above sea-level (in meters), type=float32
+meta                   Dictionary of addtional user-defined meta-data
 
+
+
+```
 
 
 
@@ -63,19 +60,22 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 
 ./Reference_2022-09-28_09.00.00.000.miniDAS
               traces == (10000, 300) numpy array
-      DASFileVersion == 1.03
-                  GL == 10.2
-              domain == strainrate
-               fsamp == 1000
-                elev == (300,) numpy array
-                lats == (300,) numpy array
-               longs == (300,) numpy array
-                  t0 == 2022-09-28 09:00:00
+          data_units == rad
+          elevations == (300,) numpy array, (     0 <= elevations <=     0)
+              format == miniDAS
+        gauge_length == 10.2
+           latitudes == (300,) numpy array, (48.858 <= latitudes <=48.868)
+          longitudes == (300,) numpy array, (2.2945 <= longitudes <=2.2945)
+       sampling_rate == 1000.0
+        scale_factor == 567890.1234
+          start_time == 28 Sep 2022 09:00:00.000000
+ units_after_scaling == µε/s
+             version == 0.1.0
      /meta/dict/val1 == 1.23
      /meta/dict/val2 == dummy
         /meta/scalar == 3.14159265358979
         /meta/string == This is a test
-        /meta/vector == (10,) numpy array
+        /meta/vector == (10,) numpy array, (10 <= /meta/vector <=19)
 >>>
 ```
 
@@ -84,30 +84,19 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 
 ### DAS_Format_reference.py
 ```python
-def readDAS(fname):
+def readDAS(fname, apply_scaling=True):
     """
-    Read minidata
+    Read miniDAS data
 
     Args:
-        fname:  Filename to be read
+        fname:          Filename to be read
+        apply_scaling:  if True, the scaling factor is applied to the data and output data are in "units_after_scaling"
 
     Returns:
         das:    A dictionary of signal data and header information
     """
 ```
-```python
-def checkDASFileFormat(das):
-    """
-    Check the validity of an miniDAS file.
 
-    Args:
-        das:    Dictionary of signal data and header information
-                (see readDAS())
-
-    Return:
-        valid:  A boolean of True/False depending on outcome of check
-    """
-```
 ```python
 def infoDAS(fname, meta=True):
     """
@@ -115,41 +104,34 @@ def infoDAS(fname, meta=True):
     """
 ```
 ```python
-def writeDAS(fname,  traces, domain, t0, fsamp, GL, lats, longs, elev, meta={}):
+def writeDAS(fname,  traces, data_units, scale_factor, units_after_scaling,\
+             start_time, sampling_rate, gauge_length, \
+             latitudes, longitudes, elevations, meta={}):
     """
     Write data in miniDAS format
     Args:
         fname:  Filename of the file to be written
                 Convention is "ProjectLabel_yyyy-mm-dd_HH.MM.SS.FFF.miniDAS"
                 Leave empty to create filename automatically for storing in current working directory
-        traces: DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
-        domain: A string describing data domain; currently accepted are {"strain", "strainrate"}
-        t0:     Unix time stamp of first sample in nano-seconds
-        fsamp:  Temporal sampling rate [in Hz]
-        GL:     Gauge length [in meters]
-        lats:   Vector of latitudes for each channel
-        longs:  Vector of longitudes for each channel
-        elev:   Vector of elevations for each channel [in meters]
-        meta:   A dictionary of user-defined header values. Then is free-form
+        traces:               DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
+        version:              Version of DAS file format, type=string
+        data_units:           Units of the data-traces (e.g. radians, m/(m*s), m/m) type=string
+        scale_factor:         A scaling factor to be multiplied with the data; type=float32
+        units_after_scaling:  Units of traces after scaling is multiplied with traces; type=string
+        start_time:           UNIX time stamp of first sample in file (in nano-seconds) type=uint64
+        sampling_rate:        Temporal sampling rate in Hz type=float32
+        gauge_length:         Gauge length [in meters] type=float32
+        latitudes:            numpy array of latitudes (or y-values), type=float32
+        longitudes:           numpy array of longitudes (or x-values), type=float32
+        elevations:           numpy array of elevations above sea-level (in meters), type=float32
+        meta:                 A dictionary of user-defined header values. Then is free-form
 
     Returns:
         Nothing
     """
-```
-```python
-def compareDASdicts(das1, das2):
-    """
-    Compare two das-data dictionaries. Mainly used to check if any
-    errors were introduduced during format conversions
 
-    Args:
-        das1:   Original miniDAS-data dictionary
-        das2:   miniDAS-data dictionary to compare after conversions
-
-    Return:
-        valid:  A boolean of True/False depending on outcome of check
-    """
 ```
+
 ```python
 def make_dummy_data():
     """
@@ -171,6 +153,45 @@ def make_dummy_data():
 ### basicASNreader.py
 ```python
 def basicASNreader(fname):
+```
+
+
+### plotting.py
+```python
+def ez_waterfall(...):
+"""
+Easy waterfall plotting, with plenty of convenience options notably a human-readable time axis
+
+ARGUMENTS:
+    data:         numpy array of shape (time, distance) of the data to be plotted
+    dt:           temporal sample spacing of the data
+
+    t0:           time of first time sample, either Unix Timestamp or datetime object.
+                    If is None (default), relative time is assumed
+    distances:    vector of distance along the fibre for each channel. If None (default), data is plotted as channels
+    show_decibel: (bool) if True (default) data are converted to decibel
+    climits:      two-element tuple of the color-limits.
+                    Default is None, which automatically sets limits based on (min,max)
+    cmap:         (string) Colormap of the plot
+    cb_label:     (string) label of the colorbar
+    title:        (string) title of the plot
+    time_format:  (string) format string of the time ticks ticks. Options are:
+                     None (default) uses time in seconds relative to first sample
+                     Any valid string for datetime.strptime such as '%H:%M:%S' or '%H:%M'
+    time_ticks:   (list of floats, range). position of time-ticks. Units correspond to the last letter of the time_format parameter
+    dis_limits:   (two-element list of floats) set the distance limits
+                  if None (default), shows all data
+    dis_ticks:    (list, range) Position of the distance ticks
+    ax:           (matplotlib axes object) Axes used to plot. Default is None, which generates a new figure and axes
+    fig_size:     (two-element tuple of floats). If a new figure is created, the this determines size (in inches). Default is (12,6)
+
+
+
+RETURNS:
+    hIm:  matplotlib pcolormesh-object
+    cbar: matplotlub colorbar-object
+    ax:   maplotlib axes-object
+"""
 ```
 
 

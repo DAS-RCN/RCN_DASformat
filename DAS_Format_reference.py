@@ -7,8 +7,8 @@ Reference reader and writer for a minimalistic DAS file exchange format
 
 import numpy as np
 import h5py
-from datetime import datetime, timezone
-from sys import exit
+from plotting import ez_waterfall
+
 
 """
 This file contains a set of functions to test data conversion to the miniDAS format.
@@ -22,14 +22,12 @@ Suggested steps are
     5) Export to miniDAS format with your implentation
     6) Read miniDAS format ("readDAS()")
     7) Print out file headers  ("infoDAS()")
-    8) An automatic valitidy check can be perfomed (checkDASFileFormat()")
-    9) You may also want to verify everything by comparing miniDAS data ("compareDASdicts(das1, das2)")
 
 See at the bottom of this file for example usage
 """
 
 
-version = 0.92
+version = "0.1.0"
 
 
 
@@ -54,9 +52,9 @@ def make_dummy_data():
     nsmpl = 10000
     start = '2022-09-28T09:00:00'
 
-    t0    = np.datetime64(start, 'ns').astype('uint64')
+    start_time    = np.datetime64(start, 'ns').astype('uint64')
 
-    np.random.seed(int(t0/1e9))
+    np.random.seed(int(start_time/1e9))
     traces = np.random.rand(nsmpl, nchnl).astype('float32')
 
     Lat0  = 48.858222 #Eiffel Tower
@@ -67,21 +65,25 @@ def make_dummy_data():
 
 
     das = {}
-    das['DASFileVersion'] = version
-    das['domain'] = 'strainrate'
-    das['t0']     = t0
-    das['fsamp']  = 1000.
-    das['GL']     = 10.2
-    das['lats']   = lats
-    das['longs']  = lats * 0 + Long0
-    das['elev']   = lats * 0
-    das['traces'] = traces
-    das['meta']   = {}
+    das['format']              = "miniDAS"
+    das['version']             = version
+    das['data_units']          = 'rad'
+    das['start_time']          = start_time
+    das['scale_factor']        = 567890.1234
+    das['units_after_scaling'] = 'µε/s'
+    das['sampling_rate']       = 1000.
+    das['gauge_length']        = 10.2
+    das['latitudes']           = lats
+    das['longitudes']          = lats * 0 + Long0
+    das['elevations']          = lats * 0
+    das['traces']              = traces
+    das['meta']                = {}
 
-    das['meta']['scalar'] = 3.14159265358979
-    das['meta']['vector'] = np.arange(10, 20)
-    das['meta']['string'] = 'This is a test'
-    das['meta']['dict']   = {'val1':1.23, 'val2':'dummy'}
+    #some examples of user-defined header values
+    das['meta']['scalar']      = 3.14159265358979
+    das['meta']['vector']      = np.arange(10, 20)
+    das['meta']['string']      = 'This is a test'
+    das['meta']['dict']        = {'val1':1.23, 'val2':'dummy'}
     return das
 
 
@@ -149,10 +151,14 @@ def infoDAS(fname, meta=True):
     with h5py.File(fname, 'r') as fid:
         print('')
         print (fname)
-        print("{:>20} == {} numpy array)".format('traces', fid['traces'].shape ))
+
+        if not fid.attrs.__contains__('format'):
+            raise Exception('File does not seem to be a valid miniDAS file')
+
+        print("{:>20} == {} numpy array".format('traces', fid['traces'].shape ))
         for k in fid.attrs.keys():
             val     = fid.attrs[k]
-            if (k=='t0'):
+            if (k=='start_time'):
                 val = (val/1e3).astype('datetime64[us]')
                 val = val.item().strftime('%d %b %Y %H:%M:%S.%f')
 
@@ -177,22 +183,25 @@ def infoDAS(fname, meta=True):
 
 
 ###############################################################
-def writeDAS(fname,  traces, domain, t0, fsamp, GL, lats, longs, elev, meta={}):
+def writeDAS(fname,  traces, data_units, scale_factor, units_after_scaling, start_time, sampling_rate, gauge_length, latitudes, longitudes, elevations, meta={}):
     """
     Write data in miniDAS format
     Args:
         fname:  Filename of the file to be written
                 Convention is "ProjectLabel_yyyy-mm-dd_HH.MM.SS.FFF.miniDAS"
                 Leave empty to create filename automatically for storing in current working directory
-        traces: DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
-        domain: A string describing data domain; currently accepted are {"strain", "strainrate"}
-        t0:     Unix time stamp of first sample (in nano-seconds)
-        fsamp:  Samplin rate [in Hz]
-        GL:     Gauge length [in meters]
-        lats:   Vector of latitudes for each channel
-        longs:  Vector of longitudes for each channel
-        elev:   Vector of elevations for each channel [in meters]
-        meta:   A dictionary of user-defined header values. Then is free-form
+        traces:               DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
+        version:              Version of DAS file format, type=string
+        data_units:           Units of the data-traces (e.g. radians, m/(m*s), m/m) type=string
+        scale_factor:         A scaling factor to be multiplied with the data; type=float32
+        units_after_scaling:  Units of traces after scaling is multiplied with traces; type=string
+        start_time:           UNIX time stamp of first sample in file (in nano-seconds) type=uint64
+        sampling_rate:        Temporal sampling rate in Hz type=float32
+        gauge_length:         Gauge length [in meters] type=float32
+        latitudes:            numpy array of latitudes (or y-values), type=float32
+        longitudes:           numpy array of longitudes (or x-values), type=float32
+        elevations:           numpy array of elevations above sea-level (in meters), type=float32
+        meta:                 A dictionary of user-defined header values. Then is free-form
 
     Returns:
         Nothing
@@ -217,21 +226,24 @@ def writeDAS(fname,  traces, domain, t0, fsamp, GL, lats, longs, elev, meta={}):
     ##-----------------------------------
     if len(fname) == 0:
         #create filename from start time
-        start     = (t0/1e6).astype('datetime64[ms]')
+        start     = (start_time/1e6).astype('datetime64[ms]')
         start_str = start.item().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
         fname     = './Automatic_' + start_str + '.das'
 
     with h5py.File(fname, 'w') as fid:
-        fid['traces']         = traces  # traces of signal (nsmpl, nchnl), type=float32
+        fid['traces']         = traces  # traces of signal (nsmpl, nchnl), type=[float32 or int16]
 
-        fid.attrs['DASFileVersion'] = version    # Version of DAS file format, type=float16
-        fid.attrs['domain']         = domain  # data domain of signal traces (Strain, Strainrate, given in units of strains [m/m]) type=string
-        fid.attrs['t0']             = t0      # UNIX time stamp of first sample in file (in nano-seconds) type=uint64
-        fid.attrs['fsamp']          = fsamp   # temporal sampling rate in Hz type=float32
-        fid.attrs['GL']             = GL      # gauge length [in meters] type=float32
-        fid.attrs['lats']           = lats    # numpy array of latitudes (or y-values), type=float32
-        fid.attrs['longs']          = longs   # numpy array of longitudes (or x-values), type=float32
-        fid.attrs['elev']           = elev    # numpy array of elevations above sea-level (in meters), type=float32
+        fid.attrs['format']               = 'miniDAS'            # Format name, type=string
+        fid.attrs['version']              = version              # Version of DAS file format, type=string
+        fid.attrs['data_units']           = data_units           # units of the data-traces (e.g. radians, m/(m*s), m/m) type=string
+        fid.attrs['scale_factor']         = scale_factor         # a scaling factor to be multiplied with the data; type=float32
+        fid.attrs['units_after_scaling']  = units_after_scaling  # units of traces after scaling is multiplied with traces; type=string
+        fid.attrs['start_time']           = start_time           # UNIX time stamp of first sample in file (in nano-seconds) type=uint64
+        fid.attrs['sampling_rate']        = sampling_rate        # temporal sampling rate in Hz type=float32
+        fid.attrs['gauge_length']         = gauge_length         # gauge length [in meters] type=float32
+        fid.attrs['latitudes']            = latitudes            # numpy array of latitudes (or y-values), type=float32
+        fid.attrs['longitudes']           = longitudes           # numpy array of longitudes (or x-values), type=float32
+        fid.attrs['elevations']           = elevations           # numpy array of elevations above sea-level (in meters), type=float32
 
         #now walk the "meta" dictionary and store its values recursively
         _walkingDictStoring('meta', '', meta)
@@ -241,152 +253,57 @@ def writeDAS(fname,  traces, domain, t0, fsamp, GL, lats, longs, elev, meta={}):
 
 
 ###############################################################
-def readDAS(fname):
+def readDAS(fname, apply_scaling=True):
     """
     Read miniDAS data
 
     Args:
-        fname:  Filename to be read
+        fname:          Filename to be read
+        apply_scaling:  if True, the scaling factor is applied to the data and output data are in "units_after_scaling"
 
     Returns:
         das:    A dictionary of signal data and header information
     """
     with h5py.File(fname, 'r') as fid:
-        das = {}
-        das['DASFileVersion']   = fid.attrs['DASFileVersion'][()]
-        if das['DASFileVersion'] != version:
-            print('Unknown DAS file version number!')
-            exit()
-        else:
-            das['traces'] = fid['traces'][:]
+        if not fid.attrs.__contains__('format'):
+            raise Exception('File does not seem to be a valid miniDAS file')
 
-            das['domain'] = fid.attrs['domain']
-            das['t0']     = fid.attrs['t0']
-            das['fsamp']  = fid.attrs['fsamp']
-            das['GL']     = fid.attrs['GL']
-            das['lats']   = fid.attrs['lats']
-            das['longs']  = fid.attrs['longs']
-            das['elev']   = fid.attrs['elev']
-            das['meta']   = {}
+        das = {}
+        das['format']   = fid.attrs['format'][:]
+        if das['format'] != "miniDAS":
+            raise Exception ("File does not seem to be a valid miniDAS file (format={})".format(das['format']))
+        das['version']   = fid.attrs['version'][:]
+        if das['version'] != version:
+            raise Exception ("Unknown DAS file version number: {}".format(das['version']))
+
+
+        das['traces']              = fid['traces'][:]
+        das['data_units']          = fid.attrs['data_units']
+        das['scale_factor']        = fid.attrs['scale_factor']
+        das['units_after_scaling'] = fid.attrs['units_after_scaling']
+
+        das['start_time']          = fid.attrs['start_time']
+        das['sampling_rate']       = fid.attrs['sampling_rate']
+        das['gauge_length']        = fid.attrs['gauge_length']
+        das['latitudes']           = fid.attrs['latitudes']
+        das['longitudes']          = fid.attrs['longitudes']
+        das['elevations']          = fid.attrs['elevations']
+        das['meta']                = {}
 
         #now walk the "meta" dictionary and read its values recursively
         das['meta'] = _readDictInH5('', 'meta', fid['meta'])
+
+    if apply_scaling:
+        das['traces']       = das['traces'] * das['scale_factor']
+        das['data_units']   = das['units_after_scaling']
+        das['scale_factor'] = 1.
+
     return das
 
 
 
 
-###############################################################
-def checkDASFileFormat(das):
-    """
-    Check the validity of an miniDAS file.
 
-    Args:
-        das:    Dictionary of signal data and header information
-                (see readDAS())
-
-    Return:
-        valid:  A boolean of True/False depending on outcome of check
-    """
-
-    msg = ['ERROR:']
-    valid = True
-
-    if das['DASFileVersion'] != version:
-       valid = False
-       msg.append(f'DAS File Version is not {version}')
-
-
-    if das['lats'].shape[0] != das['longs'].shape[0]:
-       valid = False
-       msg.append('lats and longs have diffrent lengths')
-
-    if das['lats'].shape[0] != das['elev'].shape[0]:
-       valid = False
-       msg.append('lats and elev have diffrent lengths')
-
-
-
-    if das['traces'].dtype != np.float32:
-        valid = False
-        msg.append('Traces seem to be stored as ' + das['traces'].dtype + ' but only float32 are allowed')
-
-    if not das['domain'].upper() in ['STRAIN', 'STRAINRATE']:
-        valid = False
-        msg.append('Data seems to be in ' + das['domain'] + ' but only STRAIN or STRAINRATE data are acceptable')
-
-
-
-    if not valid:
-        [print (m) for m in msg]
-    else:
-        print('Everything seems ok! Great!')
-    return valid
-
-
-
-
-###############################################################
-def compareDASdicts(das1, das2):
-    """
-    Compare two das-data dictionaries. Mainly used to check if any
-    errors were introduduced during format conversions
-
-    Args:
-        das1:   Original miniDAS-data dictionary
-        das2:   miniDAS-data dictionary to compare after conversions
-
-    Return:
-        valid:  A boolean of True/False depending on outcome of check
-    """
-    msg = ['ERROR:']
-    valid = True
-
-
-    if das1['DASFileVersion'] != das2['DASFileVersion']:
-        valid = False
-        msg.append('File Versions do not match')
-
-
-    if np.min(abs(das1['traces'] - das2['traces'])) > 0.000:
-        valid = False
-        msg.append('Trace values don\'t match')
-
-    if das1['domain'].upper() != das1['domain'].upper():
-       valid = False
-       msg.append('Data domain do not match ' + das2['domain'] )
-
-
-    if das1['t0'] != das2['t0']:
-        valid = False
-        msg.append('T0 value doesn\'t match')
-
-
-    if das1['fsamp'] != das2['fsamp']:
-        valid = False
-        msg.append('fsamp value doesn\'t match')
-
-    if not np.array_equal(das1['longs'], das2['longs']):
-        valid = False
-        msg.append('longs value don\'t match')
-
-    if not np.array_equal(das1['lats'], das2['lats']):
-        valid = False
-        msg.append('lats value don\'t match')
-
-    if not np.array_equal(das1['elev'], das2['elev']):
-        valid = False
-        msg.append('elev value don\'t match')
-
-
-    if not valid:
-        [print (m) for m in msg]
-    else:
-        print('Everything seems ok! Great!')
-    return valid
-
-
-from plotting import ez_waterfall
 
 
 ###############################################################
@@ -394,25 +311,27 @@ if __name__ == '__main__':
     #create dummy data
     das_dummy =  make_dummy_data()
 
-    ez_waterfall(das_dummy['traces'], fsamp=das_dummy['fsamp'], t0=das_dummy['t0'], \
+    ez_waterfall(das_dummy['traces'], fsamp=das_dummy['sampling_rate'], t0=das_dummy['start_time'], \
                  time_format='%H:%M:%S',time_ticks=range(0,60,2),title='Dummy data')
 
 
 
-    start     = (das_dummy['t0']/1e6).astype('datetime64[ms]')
+    start     = (das_dummy['start_time']/1e6).astype('datetime64[ms]')
     start_str = start.item().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
     fname     = './Reference_' + start_str + '.miniDAS'
 
     #write reference data file
     writeDAS(fname,  \
              das_dummy['traces'],\
-             das_dummy['domain'],\
-             das_dummy['t0'], \
-             das_dummy['fsamp'], \
-             das_dummy['GL'], \
-             das_dummy['lats'], \
-             das_dummy['longs'], \
-             das_dummy['elev'], \
+             das_dummy['data_units'],\
+             das_dummy['scale_factor'],\
+             das_dummy['units_after_scaling'],\
+             das_dummy['start_time'], \
+             das_dummy['sampling_rate'], \
+             das_dummy['gauge_length'], \
+             das_dummy['latitudes'], \
+             das_dummy['longitudes'], \
+             das_dummy['elevations'], \
              meta=das_dummy['meta'])
 
     #read data
@@ -420,9 +339,6 @@ if __name__ == '__main__':
     das_out = readDAS(fname)
 
 
-    #check = checkDASFileFormat(das_dummy)
-    #check = checkDASFileFormat(das_out)
-    #check = compareDASdicts(das_dummy, das_out)
 
 
 
