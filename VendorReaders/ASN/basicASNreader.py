@@ -77,5 +77,5 @@ if __name__ == '__main__':
     start     = (t0/1e6).astype('datetime64[ms]')
     start_str = start.item().strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
     fname_DAS = './ASNexample' + start_str + '.miniDAS'
-    writeDAS(fname_DAS,  traces, 'StrainRate', t0, fsamp, GL, lats, longs, elev, meta={})
+    writeDAS(fname_DAS,  traces, 'um/m/s', 1.,  'um/m/s', t0, fsamp, GL, lats, longs, elev, meta={})
 
