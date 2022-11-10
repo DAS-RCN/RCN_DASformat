@@ -4,16 +4,19 @@ The miniDAS data format is a minimalistic approach to store data from Distribute
 
 If you have any comments, please open an [issue on github](https://github.com/DAS-RCN/IRIS_DASformat/issues), or comment on existing ones.
 
-### Filename convention
+## Filename convention
+
 Files are stored in day-folders, each folder containing all files from this particular day. The file has the name syntax
+
 ```
 ./2022-01-01/ProjName_YYYY-MM-DD_HH.MM.SS.FFF.miniDAS
 ```
+
 where ***ProjName*** is a description of the project, or installation name
 Note that files have the extension ***.miniDAS***, even though technically they are ***.hdf5*** files.
 
+## Trace-Data
 
-### Trace-Data
 The signal is stored in as a **dataset** under root with the name ***traces***
 Units of the traces mus be given as a string in **data_unit** field. And additional **scale_factor** may be given that is to be multiplied with the trace data. This is accompanied by a string **units_after_scaling**
 Note that data need to be geo-calibrated, such that excess fibre lengths (such as loops) are corrected for.
@@ -22,8 +25,10 @@ Note that data need to be geo-calibrated, such that excess fibre lengths (such a
 traces          Traces of signal (nsmpl, nchnl)
 ```
 
-### Header
+## Header
+
 Basic header information are stored as attributes under root. These are the very minimal data necessary to process the data.
+
 ```
 format                 Format name (must be 'miniDAS'), type=string
 version                Version of DAS file format, type=string
@@ -37,24 +42,15 @@ latitudes              numpy array of latitudes (or y-values), type=float32
 longitudes             numpy array of longitudes (or x-values), type=float32
 elevations             numpy array of elevations above sea-level (in meters), type=float32
 meta                   Dictionary of addtional user-defined meta-data
-
-
-
 ```
 
+## Meta-Data
 
-
-
-### Meta-Data
 Additional information can be stored under the name ***meta*** as dataset. This is free-format, but should be kept to a minimum.
-
-
-
-
 
 ## Example File Information
 
-```python
+```py
 >>> fname = './Reference_2022-09-28_09.00.00.000.miniDAS'
 >>> infoDAS(fname, meta=True)
 
@@ -80,11 +76,11 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 >>>
 ```
 
-
-# Functions
+## Functions
 
 ### DAS_Format_reference.py
-```python
+
+```py
 def readDAS(fname, apply_scaling=True):
     """
     Read miniDAS data
@@ -98,13 +94,14 @@ def readDAS(fname, apply_scaling=True):
     """
 ```
 
-```python
+```py
 def infoDAS(fname, meta=True):
     """
     Print header information of an miniDAS file
     """
 ```
-```python
+
+```py
 def writeDAS(fname,  traces, data_units, scale_factor, units_after_scaling,\
              start_time, sampling_rate, gauge_length, \
              latitudes, longitudes, elevations, meta={}):
@@ -133,7 +130,7 @@ def writeDAS(fname,  traces, data_units, scale_factor, units_after_scaling,\
 
 ```
 
-```python
+```py
 def make_dummy_data():
     """
     Make some dummy data matrix and header value. This function can be used to genrate data
@@ -152,13 +149,14 @@ def make_dummy_data():
 ```
 
 ### basicASNreader.py
-```python
+
+```py
 def basicASNreader(fname):
 ```
 
-
 ### plotting.py
-```python
+
+```py
 def ez_waterfall(...):
 """
 Easy waterfall plotting, with plenty of convenience options notably a human-readable time axis
@@ -195,21 +193,10 @@ RETURNS:
 """
 ```
 
-
-
-
-
-
-
-
-
-
-
 ## Installation
 
 TODO: Installation instructions are missing
 
-
-
 ## License
+
 [MIT](https://choosealicense.com/licenses/mit/)

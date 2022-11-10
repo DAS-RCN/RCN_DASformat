@@ -1,0 +1,22 @@
+[project]
+name = "miniDAS"
+description = "Minimalistic HDF5 container for DAS event data."
+keywords = ["DAS", "distributed acoustic sensing", "seismology", "data format"]
+version = "0.1.0"
+authors = [
+    { name = "Marius Paul Isken", email = "mi@gfz-potsdam.de" },
+    { name = "Andreas Wüstefeld", email = "Andreas.Wuestefeld@norsar.no" }
+]
+dependencies = [
+    "h5py>=3.7.0",
+    "numpy>=1.23.4",
+    "matplotlib>=3.6.2"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.2.0",
+    "pre-commit>=2.20.0",
+    "isort>=5.10.0",
+    "black>=22.10.0"
+]
