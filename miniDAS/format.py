@@ -10,6 +10,7 @@ import numpy as np
 
 DataUnit = Literal["m/m", "cm/m", "mm/m"]
 ScaledUnit = Literal["ue/m"]
+_ALLOWED_DTYPES = (np.int32, np.float32)
 
 
 class OutOfBoundsError(BaseException):
@@ -70,13 +71,19 @@ class miniDAS:
         if file.exists() and not force:
             raise OSError(f"{file} already exists, use force to overwrite")
 
+        if (
+            isinstance(self.dataset, np.ndarray)
+            and self.dataset.dtype not in _ALLOWED_DTYPES
+        ):
+            raise TypeError(f"Data has invalid dtype {self.dataset.dtype}")
+
         with h5py.File(file, "w") as container:
             logging.debug("Writing miniDAS to %s", file)
             dataset = container.create_dataset(
                 "miniDAS",
-                chunk=True,
+                chunks=True,
                 data=self.dataset,
-                compress="lzf" if compress else False,
+                compression="lzf" if compress else False,
             )
 
             # dataset.dims[0].label = "channel"

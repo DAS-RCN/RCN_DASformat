@@ -7,7 +7,6 @@ from miniDAS import miniDAS
 
 
 def test_write(dummy_data: miniDAS):
-    print(dummy_data.dataset.dtype)
 
     with NamedTemporaryFile() as f:
         with pytest.raises(OSError):
