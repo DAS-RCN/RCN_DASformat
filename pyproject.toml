@@ -1,3 +1,6 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+
 [project]
 name = "miniDAS"
 description = "Minimalistic HDF5 container for DAS event data."
@@ -20,3 +23,9 @@ dev = [
     "isort>=5.10.0",
     "black>=22.10.0"
 ]
+
+[tool.black]
+target-version = ['py37', 'py38', 'py39', 'py310']
+
+[tool.isort]
+profile = "black"
