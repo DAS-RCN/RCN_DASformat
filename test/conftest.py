@@ -18,7 +18,7 @@ def dummy_data() -> miniDAS:
     start_time = int(datetime.utcnow().timestamp() * 1e9)
 
     rstate = np.random.RandomState(123123)
-    traces = rstate.randint(low=-10000, high=10000, size=(nsamples, nchannels))
+    traces = rstate.randint(low=-10000, high=10000, size=(nchannels, nsamples))
 
     lat0 = 48.858  # Eiffel Tower
     lon0 = 2.2945

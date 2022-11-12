@@ -1,1 +1,1 @@
-from .format import miniDAS  # noqa
+from .format import Meta, miniDAS  # noqa

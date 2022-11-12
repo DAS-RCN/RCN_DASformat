@@ -19,7 +19,7 @@ def test_write(dummy_data: miniDAS):
         mdas = miniDAS.open(f.name)
         mdas.nsamples
         mdas.nchannels
+        mdas.duration
 
         np.testing.assert_equal(mdas.get_data(), dummy_data.dataset)
-
         mdas.get_time_slice(dummy_data.meta.start_time_ns, dummy_data.meta.end_time_ns)
