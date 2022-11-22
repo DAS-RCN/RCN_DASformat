@@ -1,8 +1,6 @@
-# mini DAS data format
+# miniDAS data format
 
 The miniDAS data format is a minimalistic approach to store data from Distributed Acoustic Sensing (DAS) recordings in an HDF5 file.
-
-If you have any comments, please open an [issue on github](https://github.com/DAS-RCN/IRIS_DASformat/issues), or comment on existing ones.
 
 ## Filename convention
 
@@ -44,7 +42,7 @@ elevations             numpy array of elevations above sea-level (in meters), ty
 meta                   Dictionary of addtional user-defined meta-data
 ```
 
-## Meta-Data
+### Additional Meta Data
 
 Additional information can be stored under the name ***meta*** as dataset. This is free-format, but should be kept to a minimum.
 
@@ -76,126 +74,29 @@ Additional information can be stored under the name ***meta*** as dataset. This 
 >>>
 ```
 
-## Functions
+## Documentation
 
-### DAS_Format_reference.py
-
-```py
-def readDAS(fname, apply_scaling=True):
-    """
-    Read miniDAS data
-
-    Args:
-        fname:          Filename to be read
-        apply_scaling:  if True, the scaling factor is applied to the data and output data are in "units_after_scaling"
-
-    Returns:
-        das:    A dictionary of signal data and header information
-    """
-```
-
-```py
-def infoDAS(fname, meta=True):
-    """
-    Print header information of an miniDAS file
-    """
-```
-
-```py
-def writeDAS(fname,  traces, data_units, scale_factor, units_after_scaling,\
-             start_time, sampling_rate, gauge_length, \
-             latitudes, longitudes, elevations, meta={}):
-    """
-    Write data in miniDAS format
-    Args:
-        fname:  Filename of the file to be written
-                Convention is "ProjectLabel_yyyy-mm-dd_HH.MM.SS.FFF.miniDAS"
-                Leave empty to create filename automatically for storing in current working directory
-        traces:               DAS-signal data matrix, first dimension is "time", and second dimension "channel" (nSample, nChannel)
-        version:              Version of DAS file format, type=string
-        data_units:           Units of the data-traces (e.g. radians, m/(m*s), m/m) type=string
-        scale_factor:         A scaling factor to be multiplied with the data; type=float32
-        units_after_scaling:  Units of traces after scaling is multiplied with traces; type=string
-        start_time:           UNIX time stamp of first sample in file (in nano-seconds) type=uint64
-        sampling_rate:        Temporal sampling rate in Hz type=float32
-        gauge_length:         Gauge length [in meters] type=float32
-        latitudes:            numpy array of latitudes (or y-values), type=float32
-        longitudes:           numpy array of longitudes (or x-values), type=float32
-        elevations:           numpy array of elevations above sea-level (in meters), type=float32
-        meta:                 A dictionary of user-defined header values. Then is free-form
-
-    Returns:
-        Nothing
-    """
-
-```
-
-```py
-def make_dummy_data():
-    """
-    Make some dummy data matrix and header value. This function can be used to genrate data
-    which may then be stored in a vendor-native format
-
-    Args:
-        No arguments for this function
-
-    Retruns:
-        das:  A dictionary with:
-                - Dummy data matrix
-                - Header information required by miniDAS
-                - Examples of free-from meta data
-
-    """
-```
-
-### basicASNreader.py
-
-```py
-def basicASNreader(fname):
-```
-
-### plotting.py
-
-```py
-def ez_waterfall(...):
-"""
-Easy waterfall plotting, with plenty of convenience options notably a human-readable time axis
-
-ARGUMENTS:
-    data:         numpy array of shape (time, distance) of the data to be plotted
-    dt:           temporal sample spacing of the data
-
-    t0:           time of first time sample, either Unix Timestamp or datetime object.
-                    If is None (default), relative time is assumed
-    distances:    vector of distance along the fibre for each channel. If None (default), data is plotted as channels
-    show_decibel: (bool) if True (default) data are converted to decibel
-    climits:      two-element tuple of the color-limits.
-                    Default is None, which automatically sets limits based on (min,max)
-    cmap:         (string) Colormap of the plot
-    cb_label:     (string) label of the colorbar
-    title:        (string) title of the plot
-    time_format:  (string) format string of the time ticks ticks. Options are:
-                     None (default) uses time in seconds relative to first sample
-                     Any valid string for datetime.strptime such as '%H:%M:%S' or '%H:%M'
-    time_ticks:   (list of floats, range). position of time-ticks. Units correspond to the last letter of the time_format parameter
-    dis_limits:   (two-element list of floats) set the distance limits
-                  if None (default), shows all data
-    dis_ticks:    (list, range) Position of the distance ticks
-    ax:           (matplotlib axes object) Axes used to plot. Default is None, which generates a new figure and axes
-    fig_size:     (two-element tuple of floats). If a new figure is created, the this determines size (in inches). Default is (12,6)
-
-
-
-RETURNS:
-    hIm:  matplotlib pcolormesh-object
-    cbar: matplotlub colorbar-object
-    ax:   maplotlib axes-object
-"""
-```
+TBD
 
 ## Installation
 
-TODO: Installation instructions are missing
+### Using pip
+
+Download miniDAS from pipy repositories using pip.
+
+```bash
+pip install miniDAS
+```
+
+### From source and for development
+
+This method is recommended for development
+
+```sh
+git clone ...miniDAS
+cd miniDAS
+pip install -e .
+```
 
 ## License
 

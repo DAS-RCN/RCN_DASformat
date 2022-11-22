@@ -1,112 +1,186 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal
+from pprint import pformat
+from typing import Literal
 
 import h5py
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 import numpy as np
 
-DataUnit = Literal["m/m", "cm/m", "mm/m"]
-ScaledUnit = Literal["ue/m"]
-_ALLOWED_DTYPES = (np.int32, np.float32)
+DataUnit = Literal[
+    "rad",
+    "m/m",
+    "cm/m",
+    "mm/m",
+    "um/m",
+    "nm/m",
+    "rad/2",
+    "m/m/2",
+    "cm/m/2",
+    "mm/m/2",
+    "um/m/2",
+    "nm/m/2",
+]
+ScaledUnit = Literal["ue/s"]
+_ALLOWED_DTYPES = (np.int16, np.int32, np.float32)
 
-
-class OutOfBoundsError(BaseException):
-    ...
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class Meta:
     data_unit: DataUnit
     start_time_ns: int
-    scale_factor: float
-    units_after_scaling: ScaledUnit
     sampling_rate: int
+    channel_spacing_m: float
     gauge_length: float
-    latitudes: list[float]
-    longitudes: list[float]
-    elevations: list[float]
+    strain_scale_factor: float
+    units_after_scaling: ScaledUnit
+    latitudes: np.ndarray
+    longitudes: np.ndarray
+    elevations: np.ndarray
     end_time_ns: int = 0
+    interrogator: str = ""
 
     @property
-    def deltat(self) -> float:
+    def delta_t(self) -> float:
+        """Sample spacing in seconds."""
         return 1.0 / self.sampling_rate
 
     @property
     def start_time(self) -> float:
+        """Start time in seconds from UNIX epoch."""
         return self.start_time_ns / 1e9
 
     @property
     def end_time(self) -> float:
+        """End time in seconds from UNIX epoch."""
         return self.end_time_ns / 1e9
 
+    @property
+    def start_date_time(self) -> datetime:
+        """Start time as datetime object."""
+        return datetime.fromtimestamp(self.start_time, tz=timezone.utc)
 
-class miniDAS:
-    _file: h5py.File | None
+    @property
+    def end_date_time(self) -> datetime:
+        """End time as datetime object."""
+        return datetime.fromtimestamp(self.end_time, tz=timezone.utc)
 
-    version: int = 1
-    dataset: h5py.Dataset | np.ndarray
-    meta: Meta
+    def __str__(self) -> str:
+        return pformat(self.__dict__)
 
-    def __init__(self, dataset: h5py.Dataset | np.ndarray, meta: Meta):
-        self.dataset = dataset
-        self._file = None
-
-        if len(meta.latitudes) != len(meta.longitudes) != len(meta.elevations):
+    def __post_init__(self) -> None:
+        if self.latitudes.size != self.longitudes.size != self.elevations.size:
             raise AttributeError(
                 "Shape mismatch between latitudes, longitudes and elevation."
             )
-        if len(meta.latitudes) != self.nchannels:
-            raise AttributeError("Missmatch between number of channels and data shape.")
 
-        meta.end_time_ns = int(meta.start_time_ns + meta.deltat * self.nsamples * 1e9)
+
+class miniDAS:
+
+    version: int = 1
+    dataset: h5py.Dataset | np.ndarray
+    _file: h5py.File
+    filename: Path
+    meta: Meta
+
+    def __init__(self, dataset: h5py.Dataset, meta: Meta) -> None:
+        self.dataset = dataset
+        self._file = dataset.file
+
+        meta.end_time_ns = int(meta.start_time_ns + meta.delta_t * 1e9 * self.n_samples)
         self.meta = meta
 
-    def write(
-        self, file: Path | str, compress: bool = True, force: bool = False
-    ) -> None:
+    @classmethod
+    def from_numpy(
+        cls,
+        file: Path | str,
+        data: np.ndarray,
+        meta: Meta,
+        compress: bool = True,
+        force: bool = False,
+    ) -> miniDAS:
+        """Create a dataset from `np.array` and meta data.
+
+        Args:
+            file (Path | str): Filepath to write the HDF5 dataset to.
+            data (np.ndarray): The DAS data in int16, int32 or float32 type.
+            meta (Meta): Meta data describing the DAS data
+            compress (bool, optional): Compress the HDF5 data with lzf compression.
+                Defaults to True.
+            force (bool, optional): Force overwrite the file if it exists.
+                Defaults to False.
+
+        Returns:
+            miniDAS: The miniDAS container.
+        """
         file = Path(file)
         if file.exists() and not force:
             raise OSError(f"{file} already exists, use force to overwrite")
 
-        if (
-            isinstance(self.dataset, np.ndarray)
-            and self.dataset.dtype not in _ALLOWED_DTYPES
-        ):
-            raise TypeError(f"Data has invalid dtype {self.dataset.dtype}")
+        if data.dtype not in _ALLOWED_DTYPES:
+            raise TypeError(f"Data has invalid dtype {data.dtype}")
 
-        with h5py.File(file, "w") as container:
-            logging.debug("Writing miniDAS to %s", file)
-            dataset = container.create_dataset(
-                "miniDAS",
-                chunks=True,
-                data=self.dataset,
-                compression="lzf" if compress else False,
+        if meta.latitudes.size != data.shape[0]:
+            raise AttributeError(
+                "Missmatch between number of channels and"
+                f"data shape {meta.latitudes.size} != {data.shape[0]}"
             )
 
-            # dataset.dims[0].label = "channel"
-            # dataset.dims[1].label = "time"
+        container = h5py.File(file, "w")
+        logging.debug("Writing miniDAS to %s", file)
+        dataset = container.create_dataset(
+            "miniDAS",
+            chunks=True,
+            data=data,
+            compression="lzf" if compress else False,
+        )
+        dataset.attrs["version"] = cls.version
+        dataset.attrs.update(asdict(meta))
 
-            dataset.attrs["version"] = self.version
-            dataset.attrs.update(asdict(self.meta))
+        return cls(dataset, meta)
 
     @classmethod
     def is_valid(cls, file: Path | str) -> bool:
+        """Check if file is a miniDAS container.
+
+        Args:
+            file (Path | str): Path to file.
+
+        Returns:
+            bool: If the file is a miniDAS file.
+        """
         file = Path(file)
 
         with h5py.File(file, "r") as container:
             dataset = container.get("miniDAS")
             if not dataset.attrs["version"] == cls.version:
-                raise OSError(
+                logger.warning(
                     f"file is version {dataset.attrs['version']},"
                     f" expected {cls.version}"
                 )
+                return False
         return True
 
     @classmethod
-    def open(cls, file: Path | str):
+    def open(cls, file: Path | str) -> miniDAS:
+        """Open a miniDAS file
+
+        Args:
+            file (Path | str): Path to file.
+
+        Raises:
+            AttributeError: When the file is not a miniDAS file.
+
+        Returns:
+            miniDAS: the container.
+        """
         file = Path(file)
         if not cls.is_valid(file):
             raise AttributeError(f"{file} is not a miniDAS file.")
@@ -116,46 +190,111 @@ class miniDAS:
         meta = dict(**dataset.attrs)
         meta.pop("version")
 
-        instance = cls(dataset, Meta(**meta))
-        instance._file = container
-        return instance
+        return cls(dataset, Meta(**meta))
 
     def close(self) -> None:
+        """Close the HDF5 file."""
         if self._file:
             self._file.close()
 
-    def get_data(self):
+    def get_data(self) -> np.ndarray:
+        """Get the data as `np.ndarray`
+
+        Returns:
+            np.ndarray: Data as `np.ndarray`
+        """
         return self.dataset[()]
 
     def get_dataset(self) -> h5py.Dataset:
+        """Get the HDF5 dataset.
+
+        Returns:
+            h5py.Dataset: The HDF5 dataset.
+        """
         return self.dataset
 
-    def get_time_slice(
+    def plot(
         self,
-        start_time: int,
-        end_time: int,
-        start_channel: int | None = None,
-        end_channel: int | None = None,
-    ) -> np.ndarray:
-        meta = self.meta
-        if start_time > end_time:
-            raise AttributeError("end_time is before start_time")
-        start_index = int((start_time - meta.start_time) // meta.deltat)
-        end_index = int((end_time - meta.end_time) // meta.deltat)
+        show_distance: bool = False,
+        show_date_time: bool = True,
+        cmap: str | None = None,
+        figsize: tuple[float, float] | None = None,
+        axes: plt.Axes | None = None,
+        show_cbar: bool = True,
+        interpolation: str = "antialiased",
+    ) -> None | plt.Axes:
+        """Plot the data
 
-        start_channel = start_channel or 0
-        end_channel = end_channel or self.nchannels
+        Args:
+            show_distance (bool, optional): Show distance in meter
+                instead instead of channel number. Defaults to False.
+            show_date_time (bool, optional): Show true date time instead of seconds.
+                Defaults to True.
+            cmap (str | None, optional): Matplotlib colormap name. Defaults to None.
+            figsize (tuple[float, float] | None, optional): Size of the figure in inches.
+                Defaults to None.
+            axes (plt.Axes | None, optional): Plot into existing aces. Defaults to None.
+            show_cbar (bool, optional): Show the colorbar, only works when `axes=None`.
+                Defaults to True.
+            interpolation (str, optional): Interpolation for imshow.
+                Defaults to "antialiased".
 
-        return self.dataset[start_channel:end_channel, start_index:end_index]
+        Returns:
+            plt.Axes: The axes
+        """
+        if axes is None:
+            fig = plt.figure(figsize=figsize)
+            ax = fig.gca()
+        else:
+            fig = None
+            ax = axes
+
+        extent_lateral = (0, self.n_channels)
+        if show_distance:
+            extent_lateral = (0, self.n_channels * self.meta.channel_spacing_m)
+
+        extent_time = (0.0, self.n_samples * self.meta.delta_t)
+        if show_date_time:
+            extent_time = (
+                mdates.date2num(self.meta.start_date_time),
+                mdates.date2num(self.meta.end_date_time),
+            )
+
+        data = self.get_data()
+        img = ax.imshow(
+            data,
+            cmap=cmap,
+            extent=(*extent_lateral, *extent_time),
+            aspect="auto",
+            interpolation=interpolation,
+        )
+
+        ax.invert_xaxis()
+        ax.set_ylabel("Time [s]")
+
+        if show_date_time:
+            ax.set_ylabel("Time UTC")
+            ax.yaxis_date()
+
+        if show_cbar and fig is not None:
+            fig.colorbar(img)
+
+        if axes is None:
+            plt.show()
+
+        return ax
 
     @property
-    def nchannels(self) -> int:
+    def n_channels(self) -> int:
+        """Number of channels in the container."""
         return self.dataset.shape[0]
 
     @property
-    def nsamples(self) -> int:
+    def n_samples(self) -> int:
+        """Number of samples."""
         return self.dataset.shape[1]
 
     @property
     def duration(self) -> float:
-        return self.nsamples * self.meta.deltat
+        """Duration of the data set in seconds."""
+        return self.n_samples * self.meta.delta_t
