@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools >= 61.0.0", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "miniDAS"
+dynamic = ["version"]
+description = "Minimalistic HDF5 container for DAS event data."
+keywords = ["DAS", "distributed acoustic sensing", "seismology", "data format"]
+authors = [
+    { name = "Marius Paul Isken", email = "mi@gfz-potsdam.de" },
+    { name = "Andreas Wüstefeld", email = "Andreas.Wuestefeld@norsar.no" }
+]
+requires-python = ">=3.6"
+dependencies = [
+    "h5py>=3.5",
+    "numpy>=1.22",
+    "matplotlib>=3.6"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.2.0",
+    "pre-commit>=2.20",
+    "isort>=5.10",
+    "black>=22.10"
+]
+
+[tool.black]
+target-version = ['py37', 'py38', 'py39', 'py310']
+
+[tool.isort]
+profile = "black"
