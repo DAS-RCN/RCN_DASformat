@@ -1,10 +1,10 @@
-#DISCONTINOUED!!!!
+# DISCONTINUED!!!!
 
 ** THIS PROJECT IS DISCONTINUED **
-For the gloabl DAS month, native interrogator format is encouraged! More information about global DAS month 2023 can be found at
+For the global DAS month of February 2023, native interrogator format is encouraged! More information about global DAS month 2023 can be found at
 https://www.norsar.no/in-focus/global-das-monitoring-month-february-2023
 
-A more comprehensive IRIS data format isunder development here: https://github.com/DAS-RCN/DAS_metadata
+A more comprehensive IRIS data format is under development here: https://github.com/DAS-RCN/DAS_metadata
 
 
 
