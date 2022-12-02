@@ -1,4 +1,16 @@
-# miniDAS data format
+#DISCONTINOUED!!!!
+
+** THIS PROJECT IS DISCONTINUED **
+For the gloabl DAS month, native interrogator format is encouraged! More information about global DAS month 2023 can be found at
+https://www.norsar.no/in-focus/global-das-monitoring-month-february-2023
+
+A more comprehensive IRIS data format isunder development here: https://github.com/DAS-RCN/DAS_metadata
+
+
+
+
+
+# miniDAS data format (discontinued)
 
 The miniDAS data format is a minimalistic approach to store data from Distributed Acoustic Sensing (DAS) recordings in an HDF5 file.
 
